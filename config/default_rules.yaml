@@ -1,0 +1,63 @@
+# Luminous default rules
+# Extension-based fast-path rules applied BEFORE calling Haiku.
+# If a file matches here, Haiku is skipped (saves API calls).
+# Format: extension -> category
+
+extension_rules:
+  # Installers
+  .dmg: "Archive/Installers"
+  .pkg: "Archive/Installers"
+  .exe: "Archive/Installers"
+  .msi: "Archive/Installers"
+
+  # Archives
+  .zip: "Archive"
+  .tar: "Archive"
+  .gz: "Archive"
+  .bz2: "Archive"
+  .7z: "Archive"
+  .rar: "Archive"
+  .xz: "Archive"
+
+  # Code
+  .py: "Code/Scripts"
+  .js: "Code/Scripts"
+  .ts: "Code/Scripts"
+  .go: "Code/Scripts"
+  .rs: "Code/Scripts"
+  .cpp: "Code/Scripts"
+  .c: "Code/Scripts"
+  .h: "Code/Scripts"
+  .java: "Code/Scripts"
+  .rb: "Code/Scripts"
+  .sh: "Code/Scripts"
+  .bash: "Code/Scripts"
+  .zsh: "Code/Scripts"
+  .ipynb: "Code/Notebooks"
+
+  # Media - images (Haiku will still be called for richer naming)
+  # Leave blank to always call Haiku for better categorization
+
+# Name-pattern rules (applied before Haiku)
+# Pattern: regex -> category
+name_pattern_rules:
+  "^receipt": "Finance/Receipts"
+  "invoice": "Finance/Invoices"
+  "statement": "Finance/Bank Statements"
+  "tax": "Finance/Tax Documents"
+  "resume|cv": "Work/Misc"
+  "contract|agreement|lease": "Work/Contracts"
+  "syllabus": "School/Syllabi"
+  "homework|assignment|hw\\d": "School/Assignments"
+
+# Files to always ignore
+ignore_names:
+  - ".DS_Store"
+  - "Thumbs.db"
+  - "desktop.ini"
+  - ".localized"
+  - "Icon?"
+
+# Size thresholds (bytes)
+# Files smaller than min_size are likely temp/junk
+min_size_bytes: 100

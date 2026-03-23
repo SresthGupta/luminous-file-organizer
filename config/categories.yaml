@@ -1,0 +1,67 @@
+# Luminous category definitions
+# These are the default top-level and sub-level categories that Haiku uses
+# as a reference when categorizing files. You can extend this list.
+
+categories:
+  Work:
+    - Projects
+    - Reports
+    - Presentations
+    - Contracts
+    - Invoices
+    - Emails
+    - Notes
+    - Misc
+
+  Finance:
+    - Receipts
+    - Bank Statements
+    - Tax Documents
+    - Investments
+    - Budgets
+    - Insurance
+
+  School:
+    - Assignments
+    - Notes
+    - Research
+    - Exams
+    - Syllabi
+    - Projects
+
+  Personal:
+    - Health
+    - Travel
+    - Legal
+    - Housing
+    - Relationships
+    - Journal
+    - Goals
+
+  Media:
+    - Images
+    - Screenshots
+    - Videos
+    - Audio
+    - Wallpapers
+
+  Code:
+    - Scripts
+    - Projects
+    - Config
+    - Notebooks
+    - Snippets
+
+  Docs:
+    - PDFs
+    - Text
+    - Office
+    - eBooks
+    - Manuals
+
+  Archive:
+    - Installers
+    - Backups
+    - Zips
+
+  Misc: []
