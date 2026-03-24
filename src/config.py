@@ -13,27 +13,55 @@ UNDO_FILE = CONFIG_DIR / "undo_history.json"
 PID_FILE = CONFIG_DIR / "luminous.pid"
 
 
-def _find_google_drive() -> list[str]:
-    """Auto-detect Google Drive paths on macOS."""
-    patterns = [
-        str(Path.home() / "Library" / "CloudStorage" / "GoogleDrive-*" / "My Drive"),
-        str(Path.home() / "Google Drive"),
-        str(Path.home() / "Google Drive" / "My Drive"),
-    ]
-    found = []
-    for pat in patterns:
-        found.extend(_glob.glob(pat))
-    return found
+def resolve_cloud_path(patterns: list) -> "Path | None":
+    """Resolve a list of path patterns (with globs) to the first existing match."""
+    for pattern in patterns:
+        matches = _glob.glob(str(pattern))
+        if matches:
+            p = Path(matches[0])
+            if p.exists():
+                return p
+        else:
+            p = Path(str(pattern))
+            if p.exists():
+                return p
+    return None
 
 
+# Cloud storage paths indexed by provider name.
+# Each value is a list of candidate paths/glob patterns (first match wins).
+CLOUD_STORAGE_PATHS: dict[str, list] = {
+    "iCloud Drive": [
+        Path.home() / "Library" / "Mobile Documents" / "com~apple~CloudDocs",
+    ],
+    "Google Drive": [
+        Path.home() / "Library" / "CloudStorage" / "GoogleDrive-*" / "My Drive",
+        Path.home() / "Google Drive",
+        Path.home() / "Google Drive" / "My Drive",
+    ],
+    "Dropbox": [
+        Path.home() / "Dropbox",
+        Path.home() / "Library" / "CloudStorage" / "Dropbox",
+    ],
+    "OneDrive": [
+        Path.home() / "OneDrive",
+        Path.home() / "Library" / "CloudStorage" / "OneDrive-*",
+    ],
+    "Box": [
+        Path.home() / "Box",
+        Path.home() / "Library" / "CloudStorage" / "Box-*",
+    ],
+}
+
+# Legacy preset dict (kept for CLI compatibility)
 CLOUD_STORAGE_PRESETS = {
     "Desktop": str(Path.home() / "Desktop"),
     "Downloads": str(Path.home() / "Downloads"),
     "Documents": str(Path.home() / "Documents"),
-    "iCloud Drive": str(Path.home() / "Library" / "Mobile Documents" / "com~apple~CloudDocs"),
-    "Dropbox": str(Path.home() / "Dropbox"),
-    "OneDrive": str(Path.home() / "OneDrive"),
-    "Google Drive": str(Path.home() / "Google Drive"),
+    **{
+        name: str(resolve_cloud_path(patterns) or patterns[0])
+        for name, patterns in CLOUD_STORAGE_PATHS.items()
+    },
 }
 
 

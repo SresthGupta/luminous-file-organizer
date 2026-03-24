@@ -6,3 +6,4 @@ PyMuPDF>=1.23.0
 Pillow>=10.0.0
 python-magic>=0.4.27
 rumps>=0.4.0
+customtkinter>=5.2.0

@@ -7,7 +7,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-import anthropic
 from rich.console import Console
 from rich.table import Table
 from rich import box
@@ -72,8 +71,6 @@ def organize_folder(
     auto_rename = cfg.get("auto_rename", True)
     manual_folders = [str(Path(m).resolve()) for m in cfg.get("manual_folders", [])]
 
-    client = anthropic.Anthropic()
-
     files = [
         p for p in folder.iterdir()
         if p.is_file() and not should_ignore(p, ignore_patterns)
@@ -103,7 +100,6 @@ def organize_folder(
                 rename_threshold=rename_threshold,
                 auto_rename=auto_rename,
                 manual_folders=manual_folders,
-                client=client,
                 summary=summary,
                 history=history,
                 table=table,
@@ -129,7 +125,6 @@ def _process_file(
     rename_threshold: float,
     auto_rename: bool,
     manual_folders: list[str],
-    client: anthropic.Anthropic,
     summary: dict,
     history: list[dict],
     table,
@@ -158,8 +153,8 @@ def _process_file(
         table.add_row(path.name, action, str(dest.parent), category)
         return
 
-    # Library tier: call Haiku
-    result: CategorizationResult = categorize_file(path, cfg, client)
+    # Library tier: categorize via Claude CLI or fast paths
+    result: CategorizationResult = categorize_file(path, cfg)
 
     dest_dir = output_paths["library"] / result.category
     new_name = None
