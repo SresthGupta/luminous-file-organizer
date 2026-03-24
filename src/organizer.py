@@ -17,6 +17,7 @@ from .config import (
     load_config,
     get_output_paths,
     ensure_output_dirs,
+    LUMINOUS_SUBFOLDERS,
     UNDO_FILE,
     ensure_config_dir,
 )
@@ -63,8 +64,8 @@ def organize_folder(
     Organize all files in `folder` using the Luminous three-tier system.
     Returns a summary dict with counts.
     """
-    ensure_output_dirs(cfg)
-    output_paths = get_output_paths(cfg)
+    ensure_output_dirs(folder)
+    output_paths = get_output_paths(folder)
     ignore_patterns = cfg.get("ignore_patterns", [])
     recents_days = cfg.get("recents_days", 3)
     rename_threshold = cfg.get("rename_confidence_threshold", 0.8)
@@ -74,7 +75,16 @@ def organize_folder(
     files = [
         p for p in folder.iterdir()
         if p.is_file() and not should_ignore(p, ignore_patterns)
+        and p.parent.name not in LUMINOUS_SUBFOLDERS
     ]
+
+    # Promote aged-out files from Recents/ to AI Library/
+    recents_dir = output_paths["recents"]
+    if recents_dir.exists():
+        for p in list(recents_dir.iterdir()):
+            if p.is_file() and not should_ignore(p, ignore_patterns):
+                if file_age_days(p) > recents_days:
+                    files.append(p)
 
     summary = {"total": len(files), "moved": 0, "renamed": 0, "skipped": 0, "errors": 0}
     history = _load_undo_history()
@@ -162,7 +172,7 @@ def _process_file(
         new_name = result.suggested_name
 
     dest = build_new_path(path, new_name, dest_dir)
-    action = "[blue]library[/blue]"
+    action = "[blue]AI Library[/blue]"
     rename_note = f" -> {dest.name}" if new_name else ""
 
     if not dry_run:

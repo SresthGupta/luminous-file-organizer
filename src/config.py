@@ -71,7 +71,6 @@ DEFAULT_CONFIG = {
         str(Path.home() / "Downloads"),
         str(Path.home() / "Documents"),
     ],
-    "output_base": str(Path.home() / "Documents" / "Luminous"),
     "recents_days": 3,
     "auto_rename": True,
     "rename_confidence_threshold": 0.80,
@@ -117,15 +116,20 @@ def save_config(cfg: dict[str, Any]) -> None:
         json.dump(cfg, f, indent=2)
 
 
-def get_output_paths(cfg: dict[str, Any]) -> dict[str, Path]:
-    base = Path(cfg["output_base"])
+# Subfolder names created inside each watched folder
+LUMINOUS_SUBFOLDERS = ("Recents", "AI Library", "Manual Library")
+
+
+def get_output_paths(folder: Path) -> dict[str, Path]:
+    """Return the three tier paths inside the given watched folder."""
     return {
-        "recents": base / "Recents",
-        "library": base / "Library",
-        "manual": base / "Manual",
+        "recents": folder / "Recents",
+        "library": folder / "AI Library",
+        "manual": folder / "Manual Library",
     }
 
 
-def ensure_output_dirs(cfg: dict[str, Any]) -> None:
-    for path in get_output_paths(cfg).values():
+def ensure_output_dirs(folder: Path) -> None:
+    """Create the three tier subdirectories inside folder if they don't exist."""
+    for path in get_output_paths(folder).values():
         path.mkdir(parents=True, exist_ok=True)

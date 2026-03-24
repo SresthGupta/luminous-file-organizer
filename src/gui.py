@@ -19,9 +19,9 @@ import yaml
 
 from .config import (
     CLOUD_STORAGE_PATHS,
+    LUMINOUS_SUBFOLDERS,
     UNDO_FILE,
     ensure_config_dir,
-    ensure_output_dirs,
     get_output_paths,
     load_config,
     save_config,
@@ -60,7 +60,7 @@ class SettingsModal(ctk.CTkToplevel):
     def __init__(self, parent: "LuminousWindow", **kwargs):
         super().__init__(parent, **kwargs)
         self.title("Settings")
-        self.geometry("460x420")
+        self.geometry("460x340")
         self.resizable(False, False)
         self.attributes("-topmost", True)
         self._parent = parent
@@ -84,40 +84,26 @@ class SettingsModal(ctk.CTkToplevel):
         ctk.CTkLabel(self, text="Settings", font=ctk.CTkFont(size=18, weight="bold"),
                      text_color=ACCENT).grid(row=0, column=0, padx=24, pady=(20, 4))
 
-        # Output folder
-        ctk.CTkLabel(self, text="Output Base Folder", font=ctk.CTkFont(size=12),
-                     text_color="#888", anchor="w").grid(row=1, column=0, padx=24, sticky="w")
-
-        out_row = ctk.CTkFrame(self, fg_color="transparent")
-        out_row.grid(row=2, column=0, padx=24, pady=(2, 12), sticky="ew")
-        out_row.grid_columnconfigure(0, weight=1)
-
-        self._out_var = ctk.StringVar(value=self._cfg.get("output_base", ""))
-        ctk.CTkEntry(out_row, textvariable=self._out_var,
-                     font=ctk.CTkFont(size=12)).grid(row=0, column=0, sticky="ew")
-        ctk.CTkButton(out_row, text="Browse", width=70, height=28,
-                      command=self._browse_output).grid(row=0, column=1, padx=(6, 0))
-
         # Auto-rename toggle
         ctk.CTkLabel(self, text="Auto-rename generic files", font=ctk.CTkFont(size=12),
-                     text_color="#888", anchor="w").grid(row=3, column=0, padx=24, sticky="w")
+                     text_color="#888", anchor="w").grid(row=1, column=0, padx=24, sticky="w")
 
         self._rename_switch = ctk.CTkSwitch(self, text="", onvalue=True, offvalue=False)
-        self._rename_switch.grid(row=4, column=0, padx=24, pady=(2, 12), sticky="w")
+        self._rename_switch.grid(row=2, column=0, padx=24, pady=(2, 12), sticky="w")
         if self._cfg.get("auto_rename", True):
             self._rename_switch.select()
 
         # Recents threshold
         ctk.CTkLabel(self, text="Recents threshold (days)", font=ctk.CTkFont(size=12),
-                     text_color="#888", anchor="w").grid(row=5, column=0, padx=24, sticky="w")
+                     text_color="#888", anchor="w").grid(row=3, column=0, padx=24, sticky="w")
 
         self._recents_var = ctk.StringVar(value=str(self._cfg.get("recents_days", 3)))
         ctk.CTkEntry(self, textvariable=self._recents_var, width=60,
-                     font=ctk.CTkFont(size=12)).grid(row=6, column=0, padx=24, pady=(2, 12), sticky="w")
+                     font=ctk.CTkFont(size=12)).grid(row=4, column=0, padx=24, pady=(2, 12), sticky="w")
 
         # Cache management
         cache_row = ctk.CTkFrame(self, fg_color="transparent")
-        cache_row.grid(row=7, column=0, padx=24, pady=(0, 12), sticky="ew")
+        cache_row.grid(row=5, column=0, padx=24, pady=(0, 12), sticky="ew")
 
         cache_size = self._get_cache_size()
         ctk.CTkLabel(cache_row, text=f"Cache: {cache_size}",
@@ -128,24 +114,19 @@ class SettingsModal(ctk.CTkToplevel):
 
         # Batch size
         ctk.CTkLabel(self, text="Batch size", font=ctk.CTkFont(size=12),
-                     text_color="#888", anchor="w").grid(row=8, column=0, padx=24, sticky="w")
+                     text_color="#888", anchor="w").grid(row=6, column=0, padx=24, sticky="w")
         self._batch_var = ctk.StringVar(value=str(self._cfg.get("batch_size", 5)))
         ctk.CTkEntry(self, textvariable=self._batch_var, width=60,
-                     font=ctk.CTkFont(size=12)).grid(row=9, column=0, padx=24, pady=(2, 16), sticky="w")
+                     font=ctk.CTkFont(size=12)).grid(row=7, column=0, padx=24, pady=(2, 16), sticky="w")
 
         # Buttons
         btn_row = ctk.CTkFrame(self, fg_color="transparent")
-        btn_row.grid(row=10, column=0, padx=24, pady=(0, 20))
+        btn_row.grid(row=8, column=0, padx=24, pady=(0, 20))
 
         ctk.CTkButton(btn_row, text="Save", fg_color=ACCENT, hover_color=ACCENT_HOVER,
                       width=100, command=self._save).pack(side="left", padx=(0, 8))
         ctk.CTkButton(btn_row, text="Cancel", fg_color="transparent", width=80,
                       command=self.destroy).pack(side="left")
-
-    def _browse_output(self) -> None:
-        path = filedialog.askdirectory(title="Choose output base folder")
-        if path:
-            self._out_var.set(path)
 
     def _get_cache_size(self) -> str:
         if CACHE_FILE.exists():
@@ -163,7 +144,6 @@ class SettingsModal(ctk.CTkToplevel):
         self.destroy()
 
     def _save(self) -> None:
-        self._cfg["output_base"] = self._out_var.get()
         self._cfg["auto_rename"] = bool(self._rename_switch.get())
         try:
             self._cfg["recents_days"] = int(self._recents_var.get())
@@ -517,7 +497,6 @@ class LuminousWindow(ctk.CTk):
 
         def run() -> None:
             cfg = load_config()
-            ensure_output_dirs(cfg)
             total = 0
             for folder in folders:
                 try:
@@ -554,7 +533,6 @@ class LuminousWindow(ctk.CTk):
 
         def on_file(path: Path) -> None:
             cfg = load_config()
-            ensure_output_dirs(cfg)
             try:
                 organize_folder(path.parent, cfg, dry_run=False, verbose=False)
                 self._event_queue.put(("file_organized", str(path)))
@@ -673,15 +651,31 @@ class LuminousWindow(ctk.CTk):
         for w in self._files_scroll.winfo_children():
             w.destroy()
 
-        output_paths = get_output_paths(self._cfg)
-        tiers = [
-            ("Recents", output_paths["recents"]),
-            ("Library", output_paths["library"]),
-            ("Manual", output_paths["manual"]),
+        watched = [
+            Path(f).expanduser().resolve()
+            for f in self._cfg.get("watched_folders", [])
         ]
 
-        for tier_name, tier_path in tiers:
-            self._render_tier(tier_name, tier_path)
+        for folder in watched:
+            if not folder.exists():
+                continue
+            output_paths = get_output_paths(folder)
+            folder_label = ctk.CTkLabel(
+                self._files_scroll,
+                text=str(folder),
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color="#aaa",
+                anchor="w",
+            )
+            folder_label.pack(fill="x", padx=10, pady=(10, 2))
+            for tier_name in LUMINOUS_SUBFOLDERS:
+                tier_path = output_paths.get(
+                    "recents" if tier_name == "Recents"
+                    else "library" if tier_name == "AI Library"
+                    else "manual"
+                )
+                if tier_path is not None:
+                    self._render_tier(tier_name, tier_path)
 
     def _render_tier(self, tier_name: str, tier_path: Path) -> None:
         if not tier_path.exists():

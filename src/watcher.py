@@ -9,6 +9,8 @@ from typing import Callable
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileCreatedEvent
 
+from .config import LUMINOUS_SUBFOLDERS
+
 
 class LuminousEventHandler(FileSystemEventHandler):
     """Handle new file events and queue them for processing."""
@@ -20,15 +22,25 @@ class LuminousEventHandler(FileSystemEventHandler):
         self._pending: dict[str, threading.Timer] = {}
         self._lock = threading.Lock()
 
+    def _in_luminous_subfolder(self, path_str: str) -> bool:
+        """Return True if the path is inside a Luminous-managed subfolder."""
+        p = Path(path_str)
+        return p.parent.name in LUMINOUS_SUBFOLDERS or any(
+            part in LUMINOUS_SUBFOLDERS for part in p.parts
+        )
+
     def on_created(self, event: FileCreatedEvent) -> None:
         if event.is_directory:
             return
-        path_str = event.src_path
-        self._schedule(path_str)
+        if self._in_luminous_subfolder(event.src_path):
+            return
+        self._schedule(event.src_path)
 
     def on_moved(self, event) -> None:
         """Also handle files moved into the watched folder."""
         if event.is_directory:
+            return
+        if self._in_luminous_subfolder(event.dest_path):
             return
         self._schedule(event.dest_path)
 

@@ -17,7 +17,7 @@ from rich import box
 from .config import (
     load_config,
     save_config,
-    ensure_output_dirs,
+    get_output_paths,
     PID_FILE,
     ensure_config_dir,
 )
@@ -93,7 +93,6 @@ def start() -> None:
     """Start the Luminous daemon to watch folders continuously."""
     _print_banner()
     cfg = load_config()
-    ensure_output_dirs(cfg)
 
     watched = [Path(f).expanduser().resolve() for f in cfg["watched_folders"]]
     existing = [f for f in watched if f.exists()]
@@ -181,8 +180,11 @@ def duplicates(
 ) -> None:
     """Find (and optionally remove) duplicate files."""
     cfg = load_config()
-    from .config import get_output_paths
-    scan_dir = folder.expanduser().resolve() if folder else get_output_paths(cfg)["library"]
+    if folder:
+        scan_dir = folder.expanduser().resolve()
+    else:
+        watched = [Path(f).expanduser().resolve() for f in cfg.get("watched_folders", [])]
+        scan_dir = watched[0] if watched else Path.home() / "Downloads"
     console.print(f"[bold]Scanning for duplicates in[/bold] [cyan]{scan_dir}[/cyan]")
 
     dups = find_duplicates(scan_dir, cfg)
@@ -241,7 +243,6 @@ def cleanup(
 @app.command()
 def config(
     watch: Optional[list[Path]] = typer.Option(None, "--watch", "-w", help="Set watched folders"),
-    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Set output base folder"),
     recents_days: Optional[int] = typer.Option(None, "--recents-days", help="Days threshold for Recents tier"),
     no_rename: bool = typer.Option(False, "--no-rename", help="Disable auto-renaming"),
     show: bool = typer.Option(False, "--show", help="Print current config"),
@@ -252,18 +253,15 @@ def config(
     if watch:
         cfg["watched_folders"] = [str(p.expanduser().resolve()) for p in watch]
         console.print(f"[green]Watched folders updated.[/green]")
-    if output:
-        cfg["output_base"] = str(output.expanduser().resolve())
-        console.print(f"[green]Output folder set to {output}.[/green]")
     if recents_days is not None:
         cfg["recents_days"] = recents_days
     if no_rename:
         cfg["auto_rename"] = False
 
-    if any([watch, output, recents_days is not None, no_rename]):
+    if any([watch, recents_days is not None, no_rename]):
         save_config(cfg)
 
-    if show or not any([watch, output, recents_days is not None, no_rename]):
+    if show or not any([watch, recents_days is not None, no_rename]):
         import json
         console.print(Panel(
             json.dumps(cfg, indent=2),
